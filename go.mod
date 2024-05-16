@@ -1,4 +1,4 @@
-module gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli
+module github.com/KronosOrg/kronos-cli
 
 go 1.22
 

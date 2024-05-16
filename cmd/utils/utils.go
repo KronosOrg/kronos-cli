@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/structs"
+	"github.com/KronosOrg/kronos-cli/cmd/structs"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

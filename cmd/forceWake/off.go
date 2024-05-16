@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/structs"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/utils"
+	"github.com/KronosOrg/kronos-cli/cmd/structs"
+	"github.com/KronosOrg/kronos-cli/cmd/utils"
 )
 
 var (
