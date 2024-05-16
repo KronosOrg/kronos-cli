@@ -15,7 +15,7 @@ var ForceWakeCmd = &cobra.Command{
 	Short: "Package forceWake provides the functionality to activate/deactivate Force Wake on a KronosApp resource.",
 	Long:  `Package forceWake provides the functionality to activate/deactivate Force Wake on a KronosApp resource.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		_ = cmd.Help()
 	},
 }
 

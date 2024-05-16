@@ -15,6 +15,14 @@ import (
 	"strings"
 )
 
+func GetSuccessMessage(spec, action, name string) string {
+	return "\n*************************** SUCCESS *************************** \nKronosApp: " + name + " is now " + action + " " + spec + "!\n\n***************************************************************\n"
+}
+
+func GetWarningMessage(spec, action, name string) string {
+	return "\n*************************** WARNING *************************** \nKronosApp: " + name + " is already " + action + " " + spec + "!\n\n***************************************************************\n"
+}
+
 func GetCrdApiUrl(name, namespace string) string {
 	crdApi := fmt.Sprintf("/apis/core.wecraft.tn/v1alpha1/namespaces/%s/kronosapps/%s", namespace, name)
 	return crdApi
@@ -31,7 +39,7 @@ func GetFlagNames(cmd *cobra.Command) (string, string, error) {
 	}
 	return name, namespace, nil
 }
-func InitializeClientConfig() *kubernetes.Clientset {
+func InitializeClientConfig() (error, *kubernetes.Clientset) {
 	var kubeconfig string
 
 	kubeconfig = os.Getenv("KUBECONFIG")
@@ -54,79 +62,63 @@ func InitializeClientConfig() *kubernetes.Clientset {
 	var err error
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		panic(err.Error())
+		return err, nil
 	}
 	clientset, err := kubernetes.NewForConfig(config)
-	return clientset
+	if err != nil {
+		return err, nil
+	}
+	return nil, clientset
 }
-func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) structs.KronosApp {
+func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) (error, structs.KronosApp) {
 	sd := structs.KronosApp{}
 	crd, err := clientset.RESTClient().Get().AbsPath(crdApi).DoRaw(context.TODO())
 	if err != nil {
-		panic(err.Error())
+		return err, structs.KronosApp{}
 	}
 	if err := json.Unmarshal(crd, &sd); err != nil {
-		panic(err)
+		return err, structs.KronosApp{}
 	}
-	return sd
+	return nil, sd
 }
 
-func CheckForceWake(sd *structs.KronosApp) bool {
-	return sd.Spec.ForceWake
-}
+func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi, spec, action string) error {
+	switch spec {
+	case "wake":
+		{
+			switch action {
+			case "on":
+				{
+					sd.Spec.ForceWake = true
+				}
+			case "off":
+				{
+					sd.Spec.ForceWake = false
+				}
+			}
+		}
+	case "sleep":
+		{
+			switch action {
+			case "on":
+				{
+					sd.Spec.ForceSleep = true
+				}
+			case "off":
+				{
+					sd.Spec.ForceSleep = false
+				}
+			}
+		}
+	}
 
-func CheckForceSleep(sd *structs.KronosApp) bool {
-	return sd.Spec.ForceSleep
-}
-
-func ActivatingForceWake(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi string, name string) {
-	sd.Spec.ForceWake = true
 	sdBytes, err := json.Marshal(sd)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = clientset.RESTClient().Put().AbsPath(crdApi).Body(sdBytes).DoRaw(context.TODO())
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Printf("\n*************************** SUCCESS *************************** \nKronosApp: %s is now on ForceWake!\n\n***************************************************************\n", name)
-}
-
-func DeactivatingForceWake(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi string, name string) {
-	sd.Spec.ForceWake = false
-	sdBytes, err := json.Marshal(sd)
-	if err != nil {
-		panic(err)
-	}
-	_, err = clientset.RESTClient().Put().AbsPath(crdApi).Body(sdBytes).DoRaw(context.TODO())
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("\n*************************** SUCCESS *************************** \nKronosApp: %s is now off ForceWake!\n\n***************************************************************\n", name)
-}
-
-func ActivatingForceSleep(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi string, name string) {
-	sd.Spec.ForceSleep = true
-	sdBytes, err := json.Marshal(sd)
-	if err != nil {
-		panic(err)
-	}
-	_, err = clientset.RESTClient().Put().AbsPath(crdApi).Body(sdBytes).DoRaw(context.TODO())
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("\n*************************** SUCCESS *************************** \nKronosApp: %s is now on ForceSleep!\n\n***************************************************************\n", name)
-}
-
-func DeactivatingForceSleep(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi string, name string) {
-	sd.Spec.ForceSleep = false
-	sdBytes, err := json.Marshal(sd)
-	if err != nil {
-		panic(err)
-	}
-	_, err = clientset.RESTClient().Put().AbsPath(crdApi).Body(sdBytes).DoRaw(context.TODO())
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("\n*************************** SUCCESS *************************** \nKronosApp: %s is now off ForceSleep!\n\n***************************************************************\n", name)
+	return nil
 }

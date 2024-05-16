@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/KronosOrg/kronos-cli/cmd/structs"
 	"github.com/KronosOrg/kronos-cli/cmd/utils"
 	"github.com/spf13/cobra"
 )
@@ -31,16 +30,26 @@ $ kronos-cli forceWake off --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println(err)
 		}
 		fmt.Printf("Deactivating ForceWake on KronosApp: name=%s in namespace=%s \n", name, namespace)
-		client := utils.InitializeClientConfig()
-		sd := structs.KronosApp{}
-		crdApi := utils.GetCrdApiUrl(name, namespace)
-		sd = utils.GetKronosAppByName(client, crdApi)
-		ok := utils.CheckForceWake(&sd)
-		if !ok {
-			fmt.Printf("\n*************************** WARNING *************************** \nKronosApp: %s is already off ForceWake!\n\n***************************************************************\n", name)
+		err, client := utils.InitializeClientConfig()
+		if err != nil {
+			fmt.Println("ERROR", err)
 			os.Exit(1)
 		}
-		utils.DeactivatingForceWake(client, &sd, crdApi, name)
+		crdApi := utils.GetCrdApiUrl(name, namespace)
+		err, sd := utils.GetKronosAppByName(client, crdApi)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if !sd.Spec.ForceWake {
+			fmt.Println(utils.GetWarningMessage("ForceWake", "off", name))
+			os.Exit(1)
+		}
+		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "wake", "off")
+		if err != nil {
+			fmt.Println("ERROR ", err)
+			os.Exit(1)
+		}
+		fmt.Println(utils.GetSuccessMessage("ForceWake", "off", name))
 	},
 }
 
