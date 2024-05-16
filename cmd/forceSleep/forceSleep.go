@@ -15,7 +15,7 @@ var ForceSleepCmd = &cobra.Command{
 	Short: "Package forceSleep provides the functionality to activate/deactivate Force Sleep on a KronosApp resource.",
 	Long:  `Package forceSleep provides the functionality to activate/deactivate Force Sleep on a KronosApp resource.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		_ = cmd.Help()
 	},
 }
 
