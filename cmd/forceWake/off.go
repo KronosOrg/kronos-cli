@@ -30,7 +30,11 @@ $ kronos-cli forceWake off --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println(err)
 		}
 		fmt.Printf("Deactivating ForceWake on KronosApp: name=%s in namespace=%s \n", name, namespace)
-		client := utils.InitializeClientConfig()
+		err, client := utils.InitializeClientConfig()
+		if err != nil {
+			fmt.Println("ERROR", err)
+			os.Exit(1)
+		}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
 		err, sd := utils.GetKronosAppByName(client, crdApi)
 		if err != nil {

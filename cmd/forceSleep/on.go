@@ -31,7 +31,11 @@ $ kronos-cli forceSleep on --name=my-kronosap --namespace=my-namespace`,
 			fmt.Println("ERROR", err)
 		}
 		fmt.Printf("Activating ForceSleep on KronosApp: name=%s in namespace=%s \n", name, namespace)
-		client := utils.InitializeClientConfig()
+		err, client := utils.InitializeClientConfig()
+		if err != nil {
+			fmt.Println("ERROR", err)
+			os.Exit(1)
+		}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
 		err, sd := utils.GetKronosAppByName(client, crdApi)
 		if err != nil {

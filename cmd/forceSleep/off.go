@@ -5,9 +5,9 @@ package forceSleep
 
 import (
 	"fmt"
-	"os"
 	"github.com/KronosOrg/kronos-cli/cmd/utils"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
@@ -29,7 +29,11 @@ $ kronos-cli forceSleep off --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println("ERROR", err)
 		}
 		fmt.Printf("Deactivating ForceSleep on KronosApp: name=%s in namespace=%s \n", name, namespace)
-		client := utils.InitializeClientConfig()
+		err, client := utils.InitializeClientConfig()
+		if err != nil {
+			fmt.Println("ERROR", err)
+			os.Exit(1)
+		}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
 		err, sd := utils.GetKronosAppByName(client, crdApi)
 		if err != nil {

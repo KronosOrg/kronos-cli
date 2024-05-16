@@ -39,7 +39,7 @@ func GetFlagNames(cmd *cobra.Command) (string, string, error) {
 	}
 	return name, namespace, nil
 }
-func InitializeClientConfig() *kubernetes.Clientset {
+func InitializeClientConfig() (error, *kubernetes.Clientset) {
 	var kubeconfig string
 
 	kubeconfig = os.Getenv("KUBECONFIG")
@@ -62,10 +62,13 @@ func InitializeClientConfig() *kubernetes.Clientset {
 	var err error
 	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		panic(err.Error())
+		return err, nil
 	}
 	clientset, err := kubernetes.NewForConfig(config)
-	return clientset
+	if err != nil {
+		return err, nil
+	}
+	return nil, clientset
 }
 func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) (error, structs.KronosApp) {
 	sd := structs.KronosApp{}
