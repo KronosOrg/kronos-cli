@@ -39,7 +39,7 @@ $ kronos-cli forceSleep on --name=my-kronosap --namespace=my-namespace`,
 			os.Exit(1)
 		}
 		if sd.Spec.ForceSleep {
-			fmt.Printf(utils.GetWarningMessage("ForceSleep", "on", name))
+			fmt.Println(utils.GetWarningMessage("ForceSleep", "on", name))
 			os.Exit(1)
 		}
 		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "sleep", "on")

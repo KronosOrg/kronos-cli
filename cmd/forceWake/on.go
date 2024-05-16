@@ -37,7 +37,7 @@ $ kronos-cli forceWake on --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println(err)
 		}
 		if sd.Spec.ForceWake {
-			fmt.Printf(utils.GetWarningMessage("ForceWake", "on", name))
+			fmt.Println(utils.GetWarningMessage("ForceWake", "on", name))
 			os.Exit(1)
 		}
 		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "wake", "on")
