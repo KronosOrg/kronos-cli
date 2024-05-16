@@ -1,6 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
+Copyright © 2024 Ismail Abdelkefi abdelkefi.ismail@pm.me
 */
 package main
 
