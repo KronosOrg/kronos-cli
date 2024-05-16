@@ -34,13 +34,20 @@ $ kronos-cli forceWake off --name=my-kronosapp --namespace=my-namespace`,
 		client := utils.InitializeClientConfig()
 		sd := structs.KronosApp{}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
-		sd = utils.GetKronosAppByName(client, crdApi)
-		ok := utils.CheckForceWake(&sd)
-		if !ok {
-			fmt.Printf("\n*************************** WARNING *************************** \nKronosApp: %s is already off ForceWake!\n\n***************************************************************\n", name)
+		err, sd = utils.GetKronosAppByName(client, crdApi)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if !sd.Spec.ForceWake {
+			fmt.Printf(utils.GetWarningMessage("ForceWake", "off", name))
 			os.Exit(1)
 		}
-		utils.DeactivatingForceWake(client, &sd, crdApi, name)
+		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "wake", "off")
+		if err != nil {
+			fmt.Println("ERROR ", err)
+			os.Exit(1)
+		}
+		fmt.Printf(utils.GetSuccessMessage("ForceWake", "off", name))
 	},
 }
 

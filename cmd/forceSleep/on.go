@@ -29,24 +29,27 @@ $ kronos-cli forceSleep on --name=my-kronosap --namespace=my-namespace`,
 	Run: func(cmd *cobra.Command, args []string) {
 		name, namespace, err := utils.GetFlagNames(cmd)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("ERROR", err)
 		}
 		fmt.Printf("Activating ForceSleep on KronosApp: name=%s in namespace=%s \n", name, namespace)
 		client := utils.InitializeClientConfig()
 		sd := structs.KronosApp{}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
-		sd = utils.GetKronosAppByName(client, crdApi)
-		ok := utils.CheckForceWake(&sd)
-		if ok {
-			fmt.Println("ForceWake is ON! We cannot proceed with your request.")
+		err, sd = utils.GetKronosAppByName(client, crdApi)
+		if err != nil {
+			fmt.Println("ERROR", err)
 			os.Exit(1)
 		}
-		ok = utils.CheckForceSleep(&sd)
-		if ok {
-			fmt.Printf("\n*************************** WARNING *************************** \nKronosApp: %s is already on ForceSleep!\n\n***************************************************************\n", name)
+		if sd.Spec.ForceSleep {
+			fmt.Printf(utils.GetWarningMessage("ForceSleep", "on", name))
 			os.Exit(1)
 		}
-		utils.ActivatingForceSleep(client, &sd, crdApi, name)
+		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "sleep", "on")
+		if err != nil {
+			fmt.Println("ERROR ", err)
+			os.Exit(1)
+		}
+		fmt.Printf(utils.GetSuccessMessage("ForceSleep", "on", name))
 	},
 }
 
