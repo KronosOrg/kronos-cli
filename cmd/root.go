@@ -4,8 +4,8 @@ Copyright © 2024 Ismail Abdelkefi abdelkefi.ismail@pm.me
 package cmd
 
 import (
-	"github.com/KronosOrg/kronos-cli/cmd/forceWake"
 	"github.com/KronosOrg/kronos-cli/cmd/forceSleep"
+	"github.com/KronosOrg/kronos-cli/cmd/forceWake"
 	"github.com/spf13/cobra"
 	"os"
 )

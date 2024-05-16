@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/KronosOrg/kronos-cli/cmd/structs"
 	"github.com/KronosOrg/kronos-cli/cmd/utils"
+	"github.com/spf13/cobra"
 )
 
 var (
