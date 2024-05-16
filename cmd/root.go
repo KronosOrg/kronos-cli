@@ -1,12 +1,12 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Ismail Abdelkefi abdelkefi.ismail@pm.me
 */
 package cmd
 
 import (
+	"github.com/KronosOrg/kronos-cli/cmd/forceWake"
+	"github.com/KronosOrg/kronos-cli/cmd/forceSleep"
 	"github.com/spf13/cobra"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceSleep"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceWake"
 	"os"
 )
 
