@@ -20,9 +20,8 @@ func GetSuccessMessage(spec, action, name string) string {
 }
 
 func GetWarningMessage(spec, action, name string) string {
-	return "\n*************************** WARNING *************************** \nKronosApp: " + name + " is already " + action + " "  + spec + "!\n\n***************************************************************\n"
+	return "\n*************************** WARNING *************************** \nKronosApp: " + name + " is already " + action + " " + spec + "!\n\n***************************************************************\n"
 }
-
 
 func GetCrdApiUrl(name, namespace string) string {
 	crdApi := fmt.Sprintf("/apis/core.wecraft.tn/v1alpha1/namespaces/%s/kronosapps/%s", namespace, name)
@@ -82,28 +81,34 @@ func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) (error, 
 
 func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi, spec, action string) error {
 	switch spec {
-		case "wake": {
+	case "wake":
+		{
 			switch action {
-				case "on": {
+			case "on":
+				{
 					sd.Spec.ForceWake = true
 				}
-				case "off": {
+			case "off":
+				{
 					sd.Spec.ForceWake = false
 				}
 			}
 		}
-		case "sleep": {
+	case "sleep":
+		{
 			switch action {
-				case "on": {
+			case "on":
+				{
 					sd.Spec.ForceSleep = true
 				}
-				case "off": {
+			case "off":
+				{
 					sd.Spec.ForceSleep = false
 				}
 			}
 		}
 	}
-	
+
 	sdBytes, err := json.Marshal(sd)
 	if err != nil {
 		return err
