@@ -1,6 +1,5 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
 */
 package forceSleep
 
@@ -14,12 +13,12 @@ import (
 var ForceSleepCmd = &cobra.Command{
 	Use:   "forceSleep",
 	Short: "Package forceSleep provides the functionality to activate/deactivate Force Sleep on a KronosApp resource.",
-	Long: `Package forceSleep provides the functionality to activate/deactivate Force Sleep on a KronosApp resource.`,
+	Long:  `Package forceSleep provides the functionality to activate/deactivate Force Sleep on a KronosApp resource.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
 }
 
 func init() {
-	
+
 }

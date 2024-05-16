@@ -1,13 +1,12 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceWake"
-	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceSleep"
 	"github.com/spf13/cobra"
+	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceSleep"
+	"gitlab.infra.wecraft.tn/wecraft/automation/ifra/kronos-cli/cmd/forceWake"
 	"os"
 )
 
