@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/KronosOrg/kronos-cli/cmd/structs"
 	"github.com/KronosOrg/kronos-cli/cmd/utils"
 	"github.com/spf13/cobra"
 )
@@ -33,9 +32,8 @@ $ kronos-cli forceSleep on --name=my-kronosap --namespace=my-namespace`,
 		}
 		fmt.Printf("Activating ForceSleep on KronosApp: name=%s in namespace=%s \n", name, namespace)
 		client := utils.InitializeClientConfig()
-		sd := structs.KronosApp{}
 		crdApi := utils.GetCrdApiUrl(name, namespace)
-		err, sd = utils.GetKronosAppByName(client, crdApi)
+		err, sd := utils.GetKronosAppByName(client, crdApi)
 		if err != nil {
 			fmt.Println("ERROR", err)
 			os.Exit(1)
