@@ -45,7 +45,7 @@ $ kronos-cli forceWake on --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println("ERROR ", err)
 			os.Exit(1)
 		}
-		fmt.Printf(utils.GetSuccessMessage("ForceWake", "on", name))
+		fmt.Println(utils.GetSuccessMessage("ForceWake", "on", name))
 	},
 }
 

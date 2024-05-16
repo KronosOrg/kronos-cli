@@ -45,7 +45,7 @@ $ kronos-cli forceSleep off --name=my-kronosapp --namespace=my-namespace`,
 			fmt.Println("ERROR ", err)
 			os.Exit(1)
 		}
-		fmt.Printf(utils.GetSuccessMessage("ForceSleep", "off", name))
+		fmt.Println(utils.GetSuccessMessage("ForceSleep", "off", name))
 	},
 }
 
