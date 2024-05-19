@@ -27,7 +27,7 @@ var onCmd = &cobra.Command{
 Example:
 $ kronos-cli forceWake on --name=my-kronosapp --namespace=my-namespace`,
 	Run: func(cmd *cobra.Command, args []string) {
-		spec := "wake"
+		spec := "ForceWake"
 		action := "on"
 
 		flags, err := utils.GetFlagNames(cmd)

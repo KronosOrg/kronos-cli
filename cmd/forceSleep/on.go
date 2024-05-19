@@ -28,7 +28,7 @@ Example:
 $ kronos-cli forceSleep on --name=my-kronosap --namespace=my-namespace`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		spec := "sleep"
+		spec := "ForceSleep"
 		action := "on"
 
 		flags, err := utils.GetFlagNames(cmd)

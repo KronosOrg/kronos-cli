@@ -106,7 +106,7 @@ func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) (error, 
 
 func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi, spec, action string) error {
 	switch spec {
-	case "wake":
+	case "ForceWake":
 		{
 			switch action {
 			case "on":
@@ -119,7 +119,7 @@ func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosA
 				}
 			}
 		}
-	case "sleep":
+	case "ForceSleep":
 		{
 			switch action {
 			case "on":
@@ -176,15 +176,24 @@ func GetKronosAppsNames(list structs.KronosAppList) []string {
 	return kronosappsNames
 }
 
-func DisplayAction(name, namespace string, kronosapps structs.KronosAppList) {
+func DisplayAction(spec, action, name, namespace string, kronosapps structs.KronosAppList) {
 	kronosappsNames := GetKronosAppsNames(kronosapps)
 	var namespaceInfo string
+	var verb string
+
 	if namespace != "" {
 		namespaceInfo = " in namespace " + namespace
 	}
+
+	if action == "on" {
+		verb = "Activating"
+	} else if action == "off" {
+		verb = "Deactivating"
+	}
+
 	if len(kronosappsNames) != 1 {
 		counter := 5
-		fmt.Printf("Activating ForceWake on the following KronosApps%s: \n", namespaceInfo)
+		fmt.Printf("%s %s on the following KronosApps%s: \n", verb, spec, namespaceInfo)
 		if counter > len(kronosappsNames) {
 			counter = len(kronosappsNames)
 		}
@@ -195,12 +204,18 @@ func DisplayAction(name, namespace string, kronosapps structs.KronosAppList) {
 			fmt.Printf("...more(%d)\n", len(kronosappsNames)-counter)
 		}
 	} else {
-		DisplayActionByName(kronosappsNames[0], namespace)
+		DisplayActionByName(action, kronosappsNames[0], namespace)
 	}
 }
 
-func DisplayActionByName(name, namespace string) {
-	fmt.Printf("Activating ForceWake on KronosApp %s in namespace %s \n", name, namespace)
+func DisplayActionByName(action, name, namespace string) {
+	var verb string
+	if action == "on" {
+		verb = "Activating"
+	} else if action == "off" {
+		verb = "Deactivating"
+	}
+	fmt.Printf("%s ForceWake on KronosApp %s in namespace %s \n", verb, name, namespace)
 }
 
 func CheckIfListIsEmpty(list structs.KronosAppList, namespace string) {
@@ -230,7 +245,7 @@ func ApplyActionOnSpecByPattern(clientset *kubernetes.Clientset, regex regexp.Re
 
 	CheckIfListIsEmpty(targetKronosApps, namespace)
 
-	DisplayAction("", namespace, targetKronosApps)
+	DisplayAction(spec, action, "", namespace, targetKronosApps)
 
 	var kronosappsUnderEffect []string
 	var filteredKronosApps structs.KronosAppList
@@ -251,9 +266,9 @@ func ApplyActionOnSpecByPattern(clientset *kubernetes.Clientset, regex regexp.Re
 		DisplayUnchangedKronosApps(kronosappsUnderEffect, spec, action)
 	}
 
-	apiUrl := GetCrdApiUrl("", namespace)
 	var failedActions []string
 	for _, kronosapp := range filteredKronosApps.Items {
+		apiUrl := GetCrdApiUrl(kronosapp.Name, kronosapp.Namespace)
 		err = PerformingActionOnSpec(clientset, &kronosapp, apiUrl, spec, action)
 		if err != nil {
 			failedActions = append(failedActions, kronosapp.Name)
@@ -270,7 +285,7 @@ func ApplyActionOnSpecByPattern(clientset *kubernetes.Clientset, regex regexp.Re
 
 func CheckIfActionEffectExist(kronosapp structs.KronosApp, spec, action string) (string, *structs.KronosApp) {
 	switch spec {
-	case "wake":
+	case "ForceWake":
 		{
 			switch action {
 			case "on":
@@ -291,7 +306,7 @@ func CheckIfActionEffectExist(kronosapp structs.KronosApp, spec, action string) 
 				}
 			}
 		}
-	case "sleep":
+	case "ForceSleep":
 		{
 			switch action {
 			case "on":
@@ -330,14 +345,14 @@ func DisplayUnchangedKronosApp(name, spec, action string) error {
 func DisplayActionError(spec, action, name string) error {
 	var verb string
 	if action == "on" {
-		verb = "enabling"
+		verb = "Enabling"
 	} else if action == "off" {
-		verb = "disabling"
+		verb = "Disabling"
 	}
 	if name != "" {
-		return fmt.Errorf("Error %s %s on targeted resource: KronosApp: %s.", verb, spec, name)
+		return fmt.Errorf("%s %s on targeted resource: KronosApp: %s.", verb, spec, name)
 	}
-	return fmt.Errorf("Error %s %s on targeted resources.", verb, spec)
+	return fmt.Errorf("%s %s on targeted resources.", verb, spec)
 }
 
 func DisplayFailedActions(failedActions []string, filteredKronosApps structs.KronosAppList, spec, action string) error {
@@ -352,22 +367,24 @@ func DisplayFailedActions(failedActions []string, filteredKronosApps structs.Kro
 }
 
 func ApplyActionOnSpecByName(clientset *kubernetes.Clientset, name, namespace, spec, action string) error {
-	// var kronosappList structs.KronosAppList
 	apiUrl := GetCrdApiUrl(name, namespace)
+
 	err, kronosapp := GetKronosAppByName(clientset, apiUrl)
 	if err != nil {
 		return err
 	}
-	// kronosappList.Items = append(kronosappList.Items, kronosapp)
-	DisplayActionByName(name, namespace)
-	// failedActions, filteredKronosApps := CheckIfActionEffectExist(kronosappList, spec, action)
+
+	DisplayActionByName(action, name, namespace)
+
 	kronosAppUnderEffect, kronosApp := CheckIfActionEffectExist(kronosapp, spec, action)
 	if kronosAppUnderEffect != "" {
 		return DisplayUnchangedKronosApp(name, spec, action)
 	}
+
 	err = PerformingActionOnSpec(clientset, kronosApp, apiUrl, spec, action)
 	if err != nil {
 		return DisplayActionError(spec, action, name)
 	}
+
 	return nil
 }

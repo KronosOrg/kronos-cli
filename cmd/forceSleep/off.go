@@ -27,7 +27,7 @@ var offCmd = &cobra.Command{
 Example:
 $ kronos-cli forceSleep off --name=my-kronosapp --namespace=my-namespace`,
 	Run: func(cmd *cobra.Command, args []string) {
-		spec := "sleep"
+		spec := "ForceSleep"
 		action := "off"
 
 		flags, err := utils.GetFlagNames(cmd)
@@ -65,11 +65,11 @@ $ kronos-cli forceSleep off --name=my-kronosapp --namespace=my-namespace`,
 }
 
 func init() {
-	onCmd.Flags().StringVarP(&resourceNameOff, "name", "n", "", "The KronosApp name you want to modify")
-	onCmd.Flags().StringVarP(&resourceNamespaceOff, "namespace", "", "", "The KronosApp namespace you want to modify")
-	onCmd.Flags().StringVarP(&matchRegexOff, "match-regex", "", "", "Pattern, applied on name, used to regroup KronosApps you want to modify")
+	offCmd.Flags().StringVarP(&resourceNameOff, "name", "n", "", "The KronosApp name you want to modify")
+	offCmd.Flags().StringVarP(&resourceNamespaceOff, "namespace", "", "default", "The KronosApp namespace you want to modify")
+	offCmd.Flags().StringVarP(&matchRegexOff, "match-regex", "", "", "Pattern, applied on name, used to regroup KronosApps you want to modify")
 
-	onCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+	offCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if matchRegexOff != "" {
 			if resourceNameOff != "" {
 				return fmt.Errorf("the --match-regex flag cannot be used with the --name flag")
