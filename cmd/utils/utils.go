@@ -5,14 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/KronosOrg/kronos-cli/cmd/structs"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func GetSuccessMessage(spec, action, name string) string {
@@ -24,20 +26,40 @@ func GetWarningMessage(spec, action, name string) string {
 }
 
 func GetCrdApiUrl(name, namespace string) string {
-	crdApi := fmt.Sprintf("/apis/core.wecraft.tn/v1alpha1/namespaces/%s/kronosapps/%s", namespace, name)
-	return crdApi
+	namespaceParam := ""
+	if namespace != "" {
+		namespaceParam = fmt.Sprintf("/namespaces/%s", namespace)
+	}
+	nameParam := ""
+	if name != "" {
+		nameParam = name
+	}
+	crdApiUrl := fmt.Sprintf("/apis/core.wecraft.tn/v1alpha1%s/kronosapps/%s", namespaceParam, nameParam)
+	return crdApiUrl
 }
 
-func GetFlagNames(cmd *cobra.Command) (string, string, error) {
-	name, err := cmd.Flags().GetString("name")
-	if err != nil {
-		return "", "", err
-	}
+func GetFlagNames(cmd *cobra.Command) ([]string, error) {
+	flags := make([]string, 3)
 	namespace, err := cmd.Flags().GetString("namespace")
 	if err != nil {
-		return "", "", err
+		return flags, err
 	}
-	return name, namespace, nil
+	flags[1] = namespace
+	matchRegex, err := cmd.Flags().GetString("match-regex")
+	if err != nil {
+		return flags, err
+	}
+	if matchRegex != "" {
+		flags[0] = matchRegex
+		return flags, nil
+	}
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return flags, err
+	}
+	flags[2] = name
+
+	return flags, nil
 }
 func InitializeClientConfig() (error, *kubernetes.Clientset) {
 	var kubeconfig string
@@ -84,7 +106,7 @@ func GetKronosAppByName(clientset *kubernetes.Clientset, crdApi string) (error, 
 
 func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosApp, crdApi, spec, action string) error {
 	switch spec {
-	case "wake":
+	case "ForceWake":
 		{
 			switch action {
 			case "on":
@@ -97,7 +119,7 @@ func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosA
 				}
 			}
 		}
-	case "sleep":
+	case "ForceSleep":
 		{
 			switch action {
 			case "on":
@@ -120,5 +142,249 @@ func PerformingActionOnSpec(clientset *kubernetes.Clientset, sd *structs.KronosA
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func GetAllKronosApps(clientset *kubernetes.Clientset, namespace string) (error, structs.KronosAppList) {
+	kl := structs.KronosAppList{}
+	apiUrl := GetCrdApiUrl("", namespace)
+	kl_bytes, err := clientset.RESTClient().Get().AbsPath(apiUrl).DoRaw(context.TODO())
+	if err != nil {
+		return err, structs.KronosAppList{}
+	}
+	if err := json.Unmarshal(kl_bytes, &kl); err != nil {
+		return err, structs.KronosAppList{}
+	}
+	return nil, kl
+}
+
+func GetKronosAppsByPattern(list structs.KronosAppList, regex regexp.Regexp, namespace string) (error, structs.KronosAppList) {
+	var filteredList structs.KronosAppList
+	for _, kronosapp := range list.Items {
+		if regex.MatchString(kronosapp.Name) {
+			filteredList.Items = append(filteredList.Items, kronosapp)
+		}
+	}
+	return nil, filteredList
+}
+
+func GetKronosAppsNames(list structs.KronosAppList) []string {
+	kronosappsNames := make([]string, len(list.Items))
+	for index, kronosapp := range list.Items {
+		kronosappsNames[index] = kronosapp.Name
+	}
+	return kronosappsNames
+}
+
+func DisplayAction(spec, action, name, namespace string, kronosapps structs.KronosAppList) {
+	kronosappsNames := GetKronosAppsNames(kronosapps)
+	var namespaceInfo string
+	var verb string
+
+	if namespace != "" {
+		namespaceInfo = " in namespace " + namespace
+	}
+
+	if action == "on" {
+		verb = "Activating"
+	} else if action == "off" {
+		verb = "Deactivating"
+	}
+
+	if len(kronosappsNames) != 1 {
+		counter := 5
+		fmt.Printf("%s %s on the following KronosApps%s: \n", verb, spec, namespaceInfo)
+		if counter > len(kronosappsNames) {
+			counter = len(kronosappsNames)
+		}
+		for i := 0; i < counter; i++ {
+			fmt.Printf("- %s\n", kronosappsNames[i])
+		}
+		if counter < len(kronosappsNames) {
+			fmt.Printf("...more(%d)\n", len(kronosappsNames)-counter)
+		}
+	} else {
+		DisplayActionByName(action, kronosappsNames[0], namespace)
+	}
+}
+
+func DisplayActionByName(action, name, namespace string) {
+	var verb string
+	if action == "on" {
+		verb = "Activating"
+	} else if action == "off" {
+		verb = "Deactivating"
+	}
+	fmt.Printf("%s ForceWake on KronosApp %s in namespace %s \n", verb, name, namespace)
+}
+
+func CheckIfListIsEmpty(list structs.KronosAppList, namespace string) {
+	plural := ""
+	if namespace == "" {
+		namespace = "all"
+		plural = "s"
+	}
+	if len(list.Items) == 0 {
+		fmt.Printf("No resources found in %s namespace%s.\n", namespace, plural)
+		os.Exit(0)
+	}
+}
+
+func ApplyActionOnSpecByPattern(clientset *kubernetes.Clientset, regex regexp.Regexp, namespace, spec, action string) error {
+	err, allKronosApps := GetAllKronosApps(clientset, namespace)
+	if err != nil {
+		return err
+	}
+
+	CheckIfListIsEmpty(allKronosApps, namespace)
+
+	err, targetKronosApps := GetKronosAppsByPattern(allKronosApps, regex, namespace)
+	if err != nil {
+		return err
+	}
+
+	CheckIfListIsEmpty(targetKronosApps, namespace)
+
+	DisplayAction(spec, action, "", namespace, targetKronosApps)
+
+	var kronosappsUnderEffect []string
+	var filteredKronosApps structs.KronosAppList
+	for _, targetKronosApp := range targetKronosApps.Items {
+		kronosAppUnderEffect, kronosApp := CheckIfActionEffectExist(targetKronosApp, spec, action)
+		if kronosAppUnderEffect != "" {
+			kronosappsUnderEffect = append(kronosappsUnderEffect, kronosAppUnderEffect)
+		} else {
+			filteredKronosApps.Items = append(filteredKronosApps.Items, *kronosApp)
+		}
+	}
+
+	if len(kronosappsUnderEffect) == len(targetKronosApps.Items) {
+		return fmt.Errorf("All targeted resources are already %s %s.", action, spec)
+	}
+
+	if len(kronosappsUnderEffect) != 0 {
+		DisplayUnchangedKronosApps(kronosappsUnderEffect, spec, action)
+	}
+
+	var failedActions []string
+	for _, kronosapp := range filteredKronosApps.Items {
+		apiUrl := GetCrdApiUrl(kronosapp.Name, kronosapp.Namespace)
+		err = PerformingActionOnSpec(clientset, &kronosapp, apiUrl, spec, action)
+		if err != nil {
+			failedActions = append(failedActions, kronosapp.Name)
+		}
+	}
+	if len(failedActions) != 0 {
+		err = DisplayFailedActions(failedActions, filteredKronosApps, spec, action)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func CheckIfActionEffectExist(kronosapp structs.KronosApp, spec, action string) (string, *structs.KronosApp) {
+	switch spec {
+	case "ForceWake":
+		{
+			switch action {
+			case "on":
+				{
+					if kronosapp.Spec.ForceWake {
+						return kronosapp.Name, nil
+					} else {
+						return "", &kronosapp
+					}
+				}
+			case "off":
+				{
+					if !kronosapp.Spec.ForceWake {
+						return kronosapp.Name, nil
+					} else {
+						return "", &kronosapp
+					}
+				}
+			}
+		}
+	case "ForceSleep":
+		{
+			switch action {
+			case "on":
+				{
+					if kronosapp.Spec.ForceSleep {
+						return kronosapp.Name, nil
+					} else {
+						return "", &kronosapp
+					}
+				}
+			case "off":
+				{
+					if !kronosapp.Spec.ForceSleep {
+						return kronosapp.Name, nil
+					} else {
+						return "", &kronosapp
+					}
+				}
+			}
+		}
+	}
+	return "", nil
+}
+
+func DisplayUnchangedKronosApps(namesList []string, spec, action string) {
+	fmt.Printf("The following resources are already %s %s.\n", action, spec)
+	for _, itemName := range namesList {
+		fmt.Printf("- %s\n", itemName)
+	}
+}
+
+func DisplayUnchangedKronosApp(name, spec, action string) error {
+	return fmt.Errorf("The following resource is already %s %s: KronosApp: %s\n", action, spec, name)
+}
+
+func DisplayActionError(spec, action, name string) error {
+	var verb string
+	if action == "on" {
+		verb = "Enabling"
+	} else if action == "off" {
+		verb = "Disabling"
+	}
+	if name != "" {
+		return fmt.Errorf("%s %s on targeted resource: KronosApp: %s.", verb, spec, name)
+	}
+	return fmt.Errorf("%s %s on targeted resources.", verb, spec)
+}
+
+func DisplayFailedActions(failedActions []string, filteredKronosApps structs.KronosAppList, spec, action string) error {
+	if len(failedActions) == len(filteredKronosApps.Items) {
+		return DisplayActionError(spec, action, "")
+	}
+	fmt.Println("Error applying changes on the following resources:")
+	for _, failedAction := range failedActions {
+		fmt.Printf("- %s\n", failedAction)
+	}
+	return nil
+}
+
+func ApplyActionOnSpecByName(clientset *kubernetes.Clientset, name, namespace, spec, action string) error {
+	apiUrl := GetCrdApiUrl(name, namespace)
+
+	err, kronosapp := GetKronosAppByName(clientset, apiUrl)
+	if err != nil {
+		return err
+	}
+
+	DisplayActionByName(action, name, namespace)
+
+	kronosAppUnderEffect, kronosApp := CheckIfActionEffectExist(kronosapp, spec, action)
+	if kronosAppUnderEffect != "" {
+		return DisplayUnchangedKronosApp(name, spec, action)
+	}
+
+	err = PerformingActionOnSpec(clientset, kronosApp, apiUrl, spec, action)
+	if err != nil {
+		return DisplayActionError(spec, action, name)
+	}
+
 	return nil
 }

@@ -6,6 +6,7 @@ package forceWake
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/KronosOrg/kronos-cli/cmd/utils"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ import (
 var (
 	resourceNameOn      string
 	resourceNamespaceOn string
+	matchRegexOn        string
 )
 
 // onCmd represents the on command
@@ -25,43 +27,60 @@ var onCmd = &cobra.Command{
 Example:
 $ kronos-cli forceWake on --name=my-kronosapp --namespace=my-namespace`,
 	Run: func(cmd *cobra.Command, args []string) {
-		name, namespace, err := utils.GetFlagNames(cmd)
+		spec := "ForceWake"
+		action := "on"
+
+		flags, err := utils.GetFlagNames(cmd)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("Activating ForceWake on KronosApp: name=%s in namespace=%s \n", name, namespace)
+
+		regexPattern := flags[0]
+		namespace := flags[1]
+		name := flags[2]
+
 		err, client := utils.InitializeClientConfig()
 		if err != nil {
 			fmt.Println("ERROR", err)
 			os.Exit(1)
 		}
-		crdApi := utils.GetCrdApiUrl(name, namespace)
-		err, sd := utils.GetKronosAppByName(client, crdApi)
-		if err != nil {
-			fmt.Println(err)
+
+		if regexPattern != "" {
+			regex := regexp.MustCompile(regexPattern)
+			err = utils.ApplyActionOnSpecByPattern(client, *regex, namespace, spec, action)
+			if err != nil {
+				fmt.Println("ERROR", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		} else {
+			err = utils.ApplyActionOnSpecByName(client, name, namespace, spec, action)
+			if err != nil {
+				fmt.Println("ERROR", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
 		}
-		if sd.Spec.ForceWake {
-			fmt.Println(utils.GetWarningMessage("ForceWake", "on", name))
-			os.Exit(1)
-		}
-		err = utils.PerformingActionOnSpec(client, &sd, crdApi, "wake", "on")
-		if err != nil {
-			fmt.Println("ERROR ", err)
-			os.Exit(1)
-		}
-		fmt.Println(utils.GetSuccessMessage("ForceWake", "on", name))
 	},
 }
 
 func init() {
 	onCmd.Flags().StringVarP(&resourceNameOn, "name", "n", "", "The KronosApp name you want to modify")
 	onCmd.Flags().StringVarP(&resourceNamespaceOn, "namespace", "", "", "The KronosApp namespace you want to modify")
+	onCmd.Flags().StringVarP(&matchRegexOn, "match-regex", "", "", "Pattern, applied on name, used to regroup KronosApps you want to modify")
 
-	if err := onCmd.MarkFlagRequired("name"); err != nil {
-		fmt.Println(err)
+	onCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if matchRegexOn != "" {
+			if resourceNameOn != "" {
+				return fmt.Errorf("the --match-regex flag cannot be used with the --name flag")
+			}
+		} else {
+			if resourceNameOn == "" || resourceNamespaceOn == "" {
+				return fmt.Errorf("both --name and --namespace flags are required unless --match-regex is used")
+			}
+		}
+		return nil
 	}
-	if err := onCmd.MarkFlagRequired("namespace"); err != nil {
-		fmt.Println(err)
-	}
+
 	ForceWakeCmd.AddCommand(onCmd)
 }
