@@ -1,0 +1,33 @@
+variables:
+  BUCKET_NAME: "kronos-cli"
+  BINARY_NAME: "kronos-cli"
+  BINARY_VERSION: "v2.0.0"
+  TARGET_BRANCH: "main"
+  PROJECT_ID: automation-370217
+  PROJECT_LOCATION: eu-west-1
+
+stages:
+  - build
+  - deploy
+
+build:
+  image: golang:latest
+  stage: build
+  script:
+    - go build -o dist/$BINARY_NAME .
+  artifacts:
+    paths:
+      - dist/$BINARY_NAME
+
+deploy:
+  image: google/cloud-sdk:latest
+  stage: deploy
+  before_script:
+    - echo $AUTOMATION_SERVICE_ACCOUNT > key.json
+    - gcloud auth activate-service-account --key-file=key.json
+    - gcloud config set project $PROJECT_ID
+    - echo $BINARY_VERSION > stable.txt
+  script:
+    - gsutil cp dist/$BINARY_NAME gs://$BUCKET_NAME/$BINARY_VERSION/$BINARY_NAME
+    - gsutil cp stable.txt gs://$BUCKET_NAME/stable.txt
+    - gsutil cp dist/deploy-kronos-cli.sh gs://$BUCKET_NAME/deploy-kronos-cli.sh
