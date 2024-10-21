@@ -1,7 +1,7 @@
 variables:
   BUCKET_NAME: "kronos-cli"
   BINARY_NAME: "kronos-cli"
-  BINARY_VERSION: "v2.0.0"
+  BINARY_VERSION: "v1.1.0"
   TARGET_BRANCH: "main"
   PROJECT_ID: automation-370217
   PROJECT_LOCATION: eu-west-1
@@ -14,10 +14,13 @@ build:
   image: golang:latest
   stage: build
   script:
-    - go build -o dist/$BINARY_NAME .
+    - GOOS=linux GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-linux .
+    - GOOS=darwin GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-mac .
+    - GOOS=darwin GOARCH=arm64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-mac-arm64 .
+    - GOOS=windows GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-windows .
   artifacts:
     paths:
-      - dist/$BINARY_NAME
+      - dist/*
 
 deploy:
   image: google/cloud-sdk:latest
@@ -28,6 +31,9 @@ deploy:
     - gcloud config set project $PROJECT_ID
     - echo $BINARY_VERSION > stable.txt
   script:
-    - gsutil cp dist/$BINARY_NAME gs://$BUCKET_NAME/$BINARY_VERSION/$BINARY_NAME
+    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-linux gs://$BUCKET_NAME/$BINARY_VERSION/linux/$BINARY_NAME
+    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-mac gs://$BUCKET_NAME/$BINARY_VERSION/mac/$BINARY_NAME
+    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-mac-arm64 gs://$BUCKET_NAME/$BINARY_VERSION/mac-arm64/$BINARY_NAME
+    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-windows gs://$BUCKET_NAME/$BINARY_VERSION/windows/$BINARY_NAME
     - gsutil cp stable.txt gs://$BUCKET_NAME/stable.txt
     - gsutil cp dist/deploy-kronos-cli.sh gs://$BUCKET_NAME/deploy-kronos-cli.sh
