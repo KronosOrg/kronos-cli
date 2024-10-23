@@ -17,7 +17,7 @@ build:
     - GOOS=linux GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-linux .
     - GOOS=darwin GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-mac .
     - GOOS=darwin GOARCH=arm64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-mac-arm64 .
-    - GOOS=windows GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-windows .
+    - GOOS=windows GOARCH=amd64 go build -o dist/$BINARY_NAME-$BINARY_VERSION-windows.exe .
   artifacts:
     paths:
       - dist/*
@@ -34,6 +34,6 @@ deploy:
     - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-linux gs://$BUCKET_NAME/$BINARY_VERSION/linux/$BINARY_NAME
     - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-mac gs://$BUCKET_NAME/$BINARY_VERSION/mac/$BINARY_NAME
     - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-mac-arm64 gs://$BUCKET_NAME/$BINARY_VERSION/mac-arm64/$BINARY_NAME
-    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-windows gs://$BUCKET_NAME/$BINARY_VERSION/windows/$BINARY_NAME
+    - gsutil cp dist/$BINARY_NAME-$BINARY_VERSION-windows.exe gs://$BUCKET_NAME/$BINARY_VERSION/windows/$BINARY_NAME.exe
     - gsutil cp stable.txt gs://$BUCKET_NAME/stable.txt
     - gsutil cp dist/deploy-kronos-cli.sh gs://$BUCKET_NAME/deploy-kronos-cli.sh
